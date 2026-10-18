@@ -222,26 +222,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Smoke Test: CLI Inspect
+      - name: "Smoke Test: CLI Inspect"
         run: |
           python -m cli.main inspect contracts/exemplo_credito_mesh.yaml
 
-      - name: Smoke Test: CLI Diagram Generation
+      - name: "Smoke Test: CLI Diagram Generation"
         run: |
           python -m cli.main diagram contracts/exemplo_credito_mesh.yaml -o output_ci/mesh_er.mmd
           test -f output_ci/mesh_er.mmd
 
-      - name: Smoke Test: CLI Mock Run & Export
+      - name: "Smoke Test: CLI Mock Run & Export"
         run: |
           python -m cli.main run contracts/exemplo_credito_mesh.yaml --mock --rows 20 --output-dir output_ci
 
-      - name: Smoke Test: Standalone Generator Execution
+      - name: "Smoke Test: Standalone Generator Execution"
         run: |
           python output_ci/generator.py --rows 10 --output-dir output_ci_sub --format all
           test -f output_ci_sub/datasets/csv/empresas.csv
           test -f output_ci_sub/datasets/parquet/propostas.parquet
 
-      - name: Smoke Test: Standalone Pytest Execution
+      - name: "Smoke Test: Standalone Pytest Execution"
         run: |
           pytest output_ci/test_mock.py -v
 
