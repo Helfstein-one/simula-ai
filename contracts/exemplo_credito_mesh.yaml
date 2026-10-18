@@ -1,0 +1,304 @@
+data_contract_version: "1.0.0"
+version: "1.0.0"
+dataset_name: "credit_mesh_ecosystem"
+mesh_name: "credit_mesh_ecosystem"
+domain: "credit_risk"
+description: "Data Contract for multi-table corporate credit mesh: empresas, propostas, garantias, and operacoes."
+owner: "credit-engineering@mesh.internal"
+locale: "pt_BR"
+default_sample_size: 100
+
+tables:
+  - name: "empresas"
+    description: "Tabela cadastral de empresas tomadoras de crédito no ecossistema mesh."
+    primary_key: "empresa_id"
+    sample_size: 100
+    fields:
+      - name: "empresa_id"
+        type: "string"
+        format: "uuid"
+        description: "Identificador único global da empresa."
+        constraints:
+          primary_key: true
+          nullable: false
+          unique: true
+      - name: "cnpj"
+        type: "string"
+        description: "Cadastro Nacional da Pessoa Jurídica no formato padrão brasileiro."
+        faker: "cnpj"
+        constraints:
+          nullable: false
+          unique: true
+          regex: "^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$"
+      - name: "razao_social"
+        type: "string"
+        description: "Razão social oficial da pessoa jurídica."
+        faker: "company"
+        constraints:
+          nullable: false
+      - name: "nome_fantasia"
+        type: "string"
+        description: "Nome comercial / fantasia da empresa."
+        faker: "company_suffix"
+        constraints:
+          nullable: true
+      - name: "data_fundacao"
+        type: "date"
+        description: "Data de fundação / constituição da empresa."
+        constraints:
+          nullable: false
+          max: "now"
+          format: "%Y-%m-%d"
+      - name: "faturamento_anual"
+        type: "decimal"
+        description: "Faturamento bruto anual em Reais (BRL)."
+        constraints:
+          nullable: false
+          min: 100000.00
+          max: 100000000.00
+      - name: "setor"
+        type: "string"
+        description: "Setor de atuação econômica da empresa."
+        constraints:
+          nullable: false
+          enum: ["INDUSTRIA", "COMERCIO", "SERVICOS", "AGRONEGOCIO", "TECNOLOGIA"]
+      - name: "score_credito"
+        type: "integer"
+        description: "Pontuação de crédito (bureau score) da empresa."
+        constraints:
+          nullable: false
+          min: 0
+          max: 1000
+      - name: "status_cadastral"
+        type: "string"
+        description: "Situação cadastral perante a instituição financeira."
+        constraints:
+          nullable: false
+          enum: ["ATIVO", "INATIVO", "RECUPERACAO_JUDICIAL"]
+
+  - name: "propostas"
+    description: "Solicitações de crédito formalizadas pelas empresas tomadoras."
+    primary_key: "proposta_id"
+    sample_size: 150
+    foreign_keys:
+      - field: "empresa_id"
+        references_table: "empresas"
+        references_field: "empresa_id"
+        relationship_type: "many_to_one"
+    fields:
+      - name: "proposta_id"
+        type: "string"
+        format: "uuid"
+        description: "Identificador único da proposta de crédito."
+        constraints:
+          primary_key: true
+          nullable: false
+          unique: true
+      - name: "empresa_id"
+        type: "string"
+        format: "uuid"
+        description: "Chave estrangeira referenciando a empresa solicitante."
+        constraints:
+          nullable: false
+          foreign_key: "empresas.empresa_id"
+      - name: "data_solicitacao"
+        type: "datetime"
+        description: "Timestamp ISO da submissão da proposta de crédito."
+        constraints:
+          nullable: false
+          min: "2024-01-01T00:00:00"
+          max: "now"
+      - name: "valor_solicitado"
+        type: "decimal"
+        description: "Valor do empréstimo solicitado em BRL."
+        constraints:
+          nullable: false
+          min: 10000.00
+          max: 10000000.00
+      - name: "prazo_meses"
+        type: "integer"
+        description: "Prazo de amortização desejado em meses."
+        constraints:
+          nullable: false
+          min: 6
+          max: 120
+      - name: "taxa_juros_mensal"
+        type: "float"
+        description: "Taxa de juros proposta ao mês (ex: 0.025 = 2.5% a.m.)."
+        constraints:
+          nullable: false
+          min: 0.010
+          max: 0.060
+      - name: "finalidade"
+        type: "string"
+        description: "Destinação dos recursos do empréstimo."
+        constraints:
+          nullable: false
+          enum: ["CAPITAL_GIRO", "EXPANSAO", "EQUIPAMENTOS", "REFINANCIAMENTO"]
+      - name: "status"
+        type: "string"
+        description: "Status de análise e esteira da proposta."
+        constraints:
+          nullable: false
+          enum: ["EM_ANALISE", "APROVADA", "REJEITADA", "CANCELADA"]
+
+  - name: "garantias"
+    description: "Colaterais, avalistas e garantias vinculados às propostas de crédito."
+    primary_key: "garantia_id"
+    sample_size: 180
+    foreign_keys:
+      - field: "proposta_id"
+        references_table: "propostas"
+        references_field: "proposta_id"
+        relationship_type: "many_to_one"
+    fields:
+      - name: "garantia_id"
+        type: "string"
+        format: "uuid"
+        description: "Identificador único da garantia."
+        constraints:
+          primary_key: true
+          nullable: false
+          unique: true
+      - name: "proposta_id"
+        type: "string"
+        format: "uuid"
+        description: "Chave estrangeira referenciando a proposta vinculada."
+        constraints:
+          nullable: false
+          foreign_key: "propostas.proposta_id"
+      - name: "tipo_garantia"
+        type: "string"
+        description: "Instrumento ou bem em garantia."
+        constraints:
+          nullable: false
+          enum: ["IMOVEL", "VEICULO", "RECEBIVEIS", "AVAL", "FIANCA_BANCARIA"]
+      - name: "valor_avaliado"
+        type: "decimal"
+        description: "Valor do laudo de avaliação do bem/garantia em BRL."
+        constraints:
+          nullable: false
+          min: 5000.00
+          max: 20000000.00
+      - name: "percentual_cobertura"
+        type: "float"
+        description: "Razão entre valor da garantia e valor da proposta."
+        constraints:
+          nullable: false
+          min: 0.20
+          max: 3.00
+      - name: "descricao"
+        type: "string"
+        description: "Detalhamento e matrícula do bem/garantia."
+        constraints:
+          nullable: true
+      - name: "status_avaliacao"
+        type: "string"
+        description: "Situação do laudo pericial da garantia."
+        constraints:
+          nullable: false
+          enum: ["AVALIADA", "PENDENTE", "REJEITADA"]
+
+  - name: "operacoes"
+    description: "Contratos de crédito formalizados e desembolsados para propostas aprovadas."
+    primary_key: "operacao_id"
+    sample_size: 90
+    foreign_keys:
+      - field: "proposta_id"
+        references_table: "propostas"
+        references_field: "proposta_id"
+        relationship_type: "one_to_one"
+        filter_condition: "propostas.status == 'APROVADA'"
+      - field: "empresa_id"
+        references_table: "empresas"
+        references_field: "empresa_id"
+        relationship_type: "many_to_one"
+    fields:
+      - name: "operacao_id"
+        type: "string"
+        format: "uuid"
+        description: "Identificador único do contrato/operação de crédito."
+        constraints:
+          primary_key: true
+          nullable: false
+          unique: true
+      - name: "proposta_id"
+        type: "string"
+        format: "uuid"
+        description: "Chave estrangeira apontando para a proposta aprovada."
+        constraints:
+          nullable: false
+          unique: true
+          foreign_key: "propostas.proposta_id"
+      - name: "empresa_id"
+        type: "string"
+        format: "uuid"
+        description: "Chave estrangeira da empresa contratante (consistente com proposta)."
+        constraints:
+          nullable: false
+          foreign_key: "empresas.empresa_id"
+      - name: "codigo_contrato"
+        type: "string"
+        description: "Código de referência externa do contrato bancário."
+        constraints:
+          nullable: false
+          unique: true
+          regex: "^OP-2026-\\d{6}$"
+      - name: "data_contratacao"
+        type: "datetime"
+        description: "Data e hora de emissão da cédula de crédito (CCB)."
+        constraints:
+          nullable: false
+          min: "2024-01-01T00:00:00"
+      - name: "valor_contratado"
+        type: "decimal"
+        description: "Valor principal efetivamente contratado em BRL."
+        constraints:
+          nullable: false
+          min: 10000.00
+          max: 10000000.00
+      - name: "saldo_devedor"
+        type: "decimal"
+        description: "Saldo devedor atualizado da operação em BRL."
+        constraints:
+          nullable: false
+          min: 0.00
+      - name: "numero_parcelas"
+        type: "integer"
+        description: "Quantidade total de parcelas contratadas."
+        constraints:
+          nullable: false
+          min: 6
+          max: 120
+      - name: "parcelas_pagas"
+        type: "integer"
+        description: "Quantidade de parcelas já amortizadas."
+        constraints:
+          nullable: false
+          min: 0
+      - name: "status_operacao"
+        type: "string"
+        description: "Classificação da adimplência da operação."
+        constraints:
+          nullable: false
+          enum: ["EM_DIA", "ATRASO", "LIQUIDADA", "INADIMPLENTE"]
+
+business_rules:
+  - id: "BR01_APROVACAO_OBRIGATORIA"
+    description: "Apenas propostas com status 'APROVADA' podem originar uma linha em operacoes."
+    rule: "operacoes.proposta_id IN propostas[propostas.status == 'APROVADA'].proposta_id"
+  - id: "BR02_CRONOLOGIA_CONTRATUAL"
+    description: "A data de contratação da operação deve ser posterior ou igual à data da solicitação da proposta."
+    rule: "operacoes.data_contratacao >= propostas.data_solicitacao"
+  - id: "BR03_LIMITE_CONTRATADO"
+    description: "O valor contratado não pode exceder o valor solicitado na proposta de crédito."
+    rule: "operacoes.valor_contratado <= propostas.valor_solicitado"
+  - id: "BR04_SALDO_CONSISTENTE"
+    description: "O saldo devedor atual não pode ultrapassar o valor contratado."
+    rule: "operacoes.saldo_devedor <= operacoes.valor_contratado"
+  - id: "BR05_AMORTIZACAO_LIMITADA"
+    description: "O número de parcelas pagas não pode exceder o número total de parcelas da operação."
+    rule: "operacoes.parcelas_pagas <= operacoes.numero_parcelas"
+  - id: "BR06_CONSISTENCIA_EMPRESA"
+    description: "A empresa associada à operação deve ser idêntica à empresa solicitante da respectiva proposta."
+    rule: "operacoes.empresa_id == propostas[operacoes.proposta_id == propostas.proposta_id].empresa_id"

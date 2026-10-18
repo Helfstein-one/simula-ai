@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#3a7bd5"/>
+    </linearGradient>
+    <linearGradient id="hermesGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f12711"/>
+      <stop offset="100%" stop-color="#f5af19"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#161e31"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="podmanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#892fe8"/>
+      <stop offset="100%" stop-color="#4e1b87"/>
+    </linearGradient>
+    <linearGradient id="dataGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="600" y="45" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="800" letter-spacing="1">SIMULA-AI : DATA MESH RELATIONAL MOCK ARCHITECTURE</text>
+  <text x="600" y="70" text-anchor="middle" fill="#94a3b8" font-size="13">Closed CoALA Cognitive Loop • Hermes AI Engine • Podman Rootless Isolation</text>
+
+  <!-- Container Boundary (Podman) -->
+  <rect x="40" y="95" width="1120" height="555" rx="16" fill="#0d1527" stroke="#892fe8" stroke-width="2" stroke-dasharray="6,4"/>
+  <rect x="60" y="85" width="180" height="26" rx="6" fill="url(#podmanGrad)"/>
+  <text x="150" y="102" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">PODMAN CONTAINER</text>
+
+  <!-- 1. Input: Data Contract -->
+  <rect x="70" y="140" width="220" height="230" rx="12" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+  <circle cx="105" cy="175" r="16" fill="#38bdf8" fill-opacity="0.2"/>
+  <text x="105" y="180" text-anchor="middle" font-size="16">📄</text>
+  <text x="135" y="175" fill="#f8fafc" font-size="15" font-weight="700">Data Contract</text>
+  <text x="135" y="192" fill="#64748b" font-size="11">YAML / OpenAPI Spec</text>
+  
+  <rect x="90" y="215" width="180" height="28" rx="6" fill="#1e293b"/>
+  <text x="105" y="233" fill="#38bdf8" font-size="11" font-weight="600">• Multi-Table Schema</text>
+  
+  <rect x="90" y="250" width="180" height="28" rx="6" fill="#1e293b"/>
+  <text x="105" y="268" fill="#38bdf8" font-size="11" font-weight="600">• Primary &amp; Foreign Keys</text>
+  
+  <rect x="90" y="285" width="180" height="28" rx="6" fill="#1e293b"/>
+  <text x="105" y="303" fill="#38bdf8" font-size="11" font-weight="600">• Business Rules &amp; Ranges</text>
+
+  <rect x="90" y="320" width="180" height="28" rx="6" fill="#1e293b"/>
+  <text x="105" y="338" fill="#38bdf8" font-size="11" font-weight="600">• DAG Dependency Graph</text>
+
+  <!-- Arrow: Contract to CoALA Engine -->
+  <path d="M 290 255 L 350 255" fill="none" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <polygon points="350,255 342,250 342,260" fill="#38bdf8"/>
+
+  <!-- 2. CoALA Cognitive Engine -->
+  <rect x="360" y="140" width="460" height="480" rx="14" fill="url(#cardGrad)" stroke="#00d2ff" stroke-width="2"/>
+  <rect x="380" y="128" width="220" height="24" rx="6" fill="url(#primaryGrad)"/>
+  <text x="490" y="144" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">CoALA COGNITIVE ENGINE</text>
+
+  <!-- Hermes AI Brain Box -->
+  <rect x="390" y="170" width="400" height="95" rx="10" fill="#111c35" stroke="#f5af19" stroke-width="1.5"/>
+  <circle cx="430" cy="217" r="24" fill="url(#hermesGrad)"/>
+  <text x="430" y="225" text-anchor="middle" fill="#ffffff" font-size="22">⚡</text>
+  <text x="470" y="205" fill="#f8fafc" font-size="16" font-weight="700">Hermes 3 AI (Nous Research)</text>
+  <text x="470" y="224" fill="#fbbf24" font-size="12">Primary: hermes-3-llama-3.1-405b / 70b</text>
+  <text x="470" y="242" fill="#94a3b8" font-size="11">Fallback: Qwen 2.5 Coder ➔ DeepSeek Chat (429 Resilience)</text>
+
+  <!-- Working Memory & Cognitive Nodes -->
+  <rect x="390" y="285" width="190" height="150" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+  <text x="405" y="310" fill="#60a5fa" font-size="13" font-weight="700">🧠 Working Memory</text>
+  <text x="405" y="332" fill="#94a3b8" font-size="11">• Contract Ingestion Context</text>
+  <text x="405" y="352" fill="#94a3b8" font-size="11">• Generated Candidate Code</text>
+  <text x="405" y="372" fill="#94a3b8" font-size="11">• Active Pytest Traceback</text>
+  <text x="405" y="392" fill="#94a3b8" font-size="11">• Iteration Counter: N / Max</text>
+
+  <!-- Episodic Memory -->
+  <rect x="600" y="285" width="190" height="150" rx="8" fill="#1e293b" stroke="#ec4899" stroke-width="1"/>
+  <text x="615" y="310" fill="#f472b6" font-size="13" font-weight="700">📜 Episodic Memory</text>
+  <text x="615" y="332" fill="#94a3b8" font-size="11">• Failure Reflection Log</text>
+  <text x="615" y="352" fill="#94a3b8" font-size="11">• Schema Discrepancy Cache</text>
+  <text x="615" y="372" fill="#94a3b8" font-size="11">• Constraint Violation Map</text>
+  <text x="615" y="392" fill="#94a3b8" font-size="11">• Self-Correction Guidance</text>
+
+  <!-- Subprocess Sandbox Pytest -->
+  <rect x="390" y="455" width="400" height="145" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <circle cx="420" cy="485" r="14" fill="#10b981" fill-opacity="0.2"/>
+  <text x="420" y="490" text-anchor="middle" font-size="14">🛡️</text>
+  <text x="445" y="490" fill="#34d399" font-size="14" font-weight="700">Subprocess Pytest Isolation Sandbox</text>
+  <text x="405" y="520" fill="#94a3b8" font-size="11">✓ Zero eval() execution | Ephemeral test runner</text>
+  <text x="405" y="540" fill="#94a3b8" font-size="11">✓ Strict OS Timeout (30s) prevents infinite loops</text>
+  <text x="405" y="560" fill="#94a3b8" font-size="11">✓ Exit Code 0 ➔ Route to Output Deliverables</text>
+  <text x="405" y="580" fill="#f87171" font-size="11">✗ Exit Code 1/2 ➔ Feed Traceback to Episodic Memory</text>
+
+  <!-- Loop Feedback Arrow -->
+  <path d="M 790 530 C 830 530, 830 220, 790 220" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="5,4"/>
+  <polygon points="790,220 798,215 798,225" fill="#f43f5e"/>
+  <text x="825" y="375" fill="#f43f5e" font-size="11" font-weight="700" transform="rotate(90 825,375)">Error Feedback Loop</text>
+
+  <!-- Arrow: CoALA to Deliverables -->
+  <path d="M 820 480 L 870 480" fill="none" stroke="#10b981" stroke-width="3"/>
+  <polygon points="870,480 862,474 862,486" fill="#10b981"/>
+
+  <!-- 3. Mesh Deliverables & Datasets -->
+  <rect x="880" y="140" width="250" height="480" rx="12" fill="url(#cardGrad)" stroke="#10b981" stroke-width="1.5"/>
+  <circle cx="915" cy="175" r="16" fill="#10b981" fill-opacity="0.2"/>
+  <text x="915" y="180" text-anchor="middle" font-size="16">📦</text>
+  <text x="945" y="175" fill="#f8fafc" font-size="15" font-weight="700">Data Mesh Output</text>
+  <text x="945" y="192" fill="#64748b" font-size="11">100% Relational Mocking</text>
+
+  <!-- Tables Section -->
+  <rect x="900" y="215" width="210" height="135" rx="6" fill="#1e293b"/>
+  <text x="915" y="235" fill="#34d399" font-size="12" font-weight="700">📊 Mesh Tables (Topological DAG)</text>
+  <text x="915" y="260" fill="#cbd5e1" font-size="11">1. empresas (CNPJ, Score, Corp)</text>
+  <text x="915" y="282" fill="#cbd5e1" font-size="11">2. propostas (Loan Request, Terms)</text>
+  <text x="915" y="304" fill="#cbd5e1" font-size="11">3. garantias (Collateral Assets)</text>
+  <text x="915" y="326" fill="#cbd5e1" font-size="11">4. operacoes (Credit Contracts)</text>
+
+  <!-- Artifacts -->
+  <rect x="900" y="365" width="210" height="120" rx="6" fill="#1e293b"/>
+  <text x="915" y="388" fill="#38bdf8" font-size="12" font-weight="700">🛠️ Standalone Artifacts</text>
+  <text x="915" y="412" fill="#94a3b8" font-size="11">• generator.py (Standalone Faker)</text>
+  <text x="915" y="432" fill="#94a3b8" font-size="11">• test_mock.py (Pytest Suite)</text>
+  <text x="915" y="452" fill="#94a3b8" font-size="11">• mesh_er_diagram.mmd (Mermaid)</text>
+  <text x="915" y="472" fill="#34d399" font-size="11">• datasets/ (CSV, JSON, Parquet)</text>
+
+  <!-- Interface Footnote -->
+  <rect x="70" y="415" width="220" height="205" rx="10" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+  <text x="85" y="445" fill="#ffffff" font-size="14" font-weight="700">🖥️ Interfaces Duplas</text>
+  
+  <rect x="85" y="465" width="190" height="65" rx="6" fill="#1e293b"/>
+  <text x="95" y="488" fill="#38bdf8" font-size="12" font-weight="600">CLI (Typer + Rich)</text>
+  <text x="95" y="508" fill="#94a3b8" font-size="10">inspect • diagram • run • test</text>
+  <text x="95" y="522" fill="#94a3b8" font-size="10">Terminal spinners e tabelas ANSI</text>
+
+  <rect x="85" y="540" width="190" height="65" rx="6" fill="#1e293b"/>
+  <text x="95" y="563" fill="#ec4899" font-size="12" font-weight="600">Web UI (Streamlit)</text>
+  <text x="95" y="583" fill="#94a3b8" font-size="10">Mermaid interativo • Editor YAML</text>
+  <text x="95" y="597" fill="#94a3b8" font-size="10">Inspeção de datasets e tracebacks</text>
+</svg>

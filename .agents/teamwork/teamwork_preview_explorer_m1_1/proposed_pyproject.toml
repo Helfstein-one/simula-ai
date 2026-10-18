@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simula-ai"
+version = "0.1.0"
+description = "Autonomous relational data mocking framework for Data Mesh ecosystems"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Simula-AI Team" }]
+license = { text = "MIT" }
+dependencies = [
+    "pydantic>=2.7.0,<3.0.0",
+    "pyyaml>=6.0.1",
+    "pandas>=2.2.0",
+    "pyarrow>=16.0.0",
+    "fastparquet>=2024.5.0",
+    "faker>=25.0.0",
+    "pytest>=8.2.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "streamlit>=1.35.0",
+    "langgraph>=0.2.20,<0.3.0",
+    "langchain-core>=0.3.0,<0.4.0",
+    "httpx>=0.27.0",
+    "openai>=1.40.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+simula = "cli.main:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

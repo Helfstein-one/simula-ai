@@ -1,0 +1,127 @@
+--- a/core/code_parser.py
++++ b/core/code_parser.py
+@@ -8,6 +8,15 @@
+-# Regex for stripping reasoning tags (handles closed, unclosed with code fence, unclosed EOF)
+-THINK_TAG_REGEX = re.compile(
+-    r"<think(?:\s+[^>]*)?>.*?</think\s*>",
+-    flags=re.DOTALL | re.IGNORECASE,
+-)
++# Regex for stripping reasoning tags (handles nested, closed, orphaned, unclosed lookahead)
++INNERMOST_THINK_REGEX = re.compile(
++    r"<think(?:\s+[^>]*)?>(?:(?!<think)[\s\S])*?</think\s*>",
++    flags=re.IGNORECASE,
++)
++ORPHANED_THINK_CLOSE_REGEX = re.compile(
++    r"</think\s*>",
++    flags=re.IGNORECASE,
++)
++THINK_TAG_REGEX = INNERMOST_THINK_REGEX  # Backward compatibility alias
+ UNCLOSED_THINK_REGEX = re.compile(
+     r"<think(?:\s+[^>]*)?>.*?(?=```)",
+     flags=re.DOTALL | re.IGNORECASE,
+@@ -28,3 +37,3 @@
+ UNCLOSED_CODE_BLOCK_PATTERN = re.compile(
+-    r"```([a-zA-Z0-9_\-\.\+]*)\s*\n(.*)$",
+-    flags=re.DOTALL,
++    r"```([a-zA-Z0-9_\-\.\+]*)\s*\n((?:(?!```)[\s\S])*)$"
+ )
+@@ -56,16 +65,22 @@
+     @staticmethod
+     def strip_think_tags(text: str) -> str:
+-        """Strip <think>...</think> tags, including unclosed tags using lookaheads."""
++        """Strip <think>...</think> tags, including nested and unclosed tags."""
+         if not text:
+             return ""
+ 
+-        # Step 1: Strip standard closed think tags
+-        cleaned = THINK_TAG_REGEX.sub("", text)
++        # Step 1: Iteratively strip innermost closed think tags until fixpoint
++        cleaned = text
++        prev = None
++        passes = 0
++        while prev != cleaned and passes < 20:
++            prev = cleaned
++            cleaned = INNERMOST_THINK_REGEX.sub("", cleaned)
++            passes += 1
+ 
+-        # Step 2: Handle unclosed think tag
++        # Step 2: Clean any orphaned closing tags
++        cleaned = ORPHANED_THINK_CLOSE_REGEX.sub("", cleaned)
++
++        # Step 3: Handle unclosed think tag lookaheads
+         if "<think" in cleaned.lower():
+             if "```" in cleaned:
+                 cleaned = UNCLOSED_THINK_REGEX.sub("", cleaned)
+             else:
+                 cleaned = UNCLOSED_THINK_NO_FENCE_REGEX.sub("", cleaned)
+ 
+         return cleaned.strip()
+@@ -75,27 +90,36 @@
+     @classmethod
+     def extract_python_code(cls, response_text: str) -> str:
+         """Strip reasoning tags and extract the primary executable Python code block."""
+-        cleaned_text = cls.strip_think_tags(response_text)
+-
+-        # Match closed code blocks
+-        matches = CODE_BLOCK_PATTERN.findall(cleaned_text)
++        # Mask closed code blocks to protect literals like '<think>' inside code
++        blocks: list[tuple[str, str]] = []
++        def _repl(m: re.Match) -> str:
++            idx = len(blocks)
++            blocks.append((m.group(1), m.group(2)))
++            return f"__SIMULA_BLOCK_{idx}__"
++
++        masked_text = CODE_BLOCK_PATTERN.sub(_repl, response_text)
++        cleaned_masked = cls.strip_think_tags(masked_text)
+ 
++        # Filter surviving closed code blocks
+         candidates: list[str] = []
+-        if matches:
+-            for lang, body in matches:
+-                lang_clean = lang.strip().lower()
+-                body_clean = body.strip()
+-                if not body_clean:
+-                    continue
+-                # Exclude explicit non-python blocks if alternatives exist
+-                if lang_clean in NON_PYTHON_LANGUAGES and len(matches) > 1:
+-                    continue
+-                candidates.append(body_clean)
++        for idx, (lang, body) in enumerate(blocks):
++            token = f"__SIMULA_BLOCK_{idx}__"
++            if token in cleaned_masked:
++                lang_clean = lang.strip().lower()
++                body_clean = body.strip()
++                if not body_clean:
++                    continue
++                if lang_clean in NON_PYTHON_LANGUAGES:
++                    continue
++                candidates.append(body_clean)
+ 
+         # Fallback to unclosed code block if truncated
+         if not candidates:
+-            unclosed_matches = UNCLOSED_CODE_BLOCK_PATTERN.findall(cleaned_text)
++            restored_text = cleaned_masked
++            for idx, (lang, body) in enumerate(blocks):
++                restored_text = restored_text.replace(f"__SIMULA_BLOCK_{idx}__", f"```{lang}\n{body}```")
++            unclosed_matches = UNCLOSED_CODE_BLOCK_PATTERN.findall(restored_text)
+             for lang, body in unclosed_matches:
+                 lang_clean = lang.strip().lower()
+                 body_clean = body.strip()
+                 if body_clean and lang_clean not in NON_PYTHON_LANGUAGES:
+                     candidates.append(body_clean)
+@@ -122,5 +146,5 @@
+         # Fallback: Raw un-fenced code
+-        lines = cleaned_text.splitlines()
++        lines = cleaned_masked.splitlines()
+         first_code_idx = -1
+         for idx, line in enumerate(lines):
+             stripped = line.strip()
+             if stripped.startswith(("import ", "from ", "def ", "class ", "#!")):
+                 first_code_idx = idx
+                 break
+ 
+         if first_code_idx != -1:
+             return "\n".join(lines[first_code_idx:]).strip()
+ 
+-        return cleaned_text.strip()
++        return cleaned_masked.strip()

@@ -1,0 +1,216 @@
+{
+  "total": 22,
+  "passed": 22,
+  "defects_or_findings": 0,
+  "results": [
+    {
+      "test_id": "CP-01",
+      "name": "Nested Think Tags Stripping Leakage",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Successfully stripped all nested think tags.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-02",
+      "name": "Code Block Leakage in Nested Think Tags",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Successfully prioritized real code block.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-03",
+      "name": "Think Tag inside Python String Literal",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Successfully preserved think tags inside Python code literal.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-04",
+      "name": "Multi-block Markdown (bash/sql/python)",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Correctly excluded bash and sql blocks and selected Python test suite.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-05",
+      "name": "Multi-block Python Scoring Priority",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Scoring heuristic correctly prioritized full test suite with imports and test functions.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-06",
+      "name": "Single Closed Non-Python + Unclosed Python",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Successfully extracted unclosed python block.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-07",
+      "name": "Truncated Code Fence at EOF",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Correctly recovered unclosed code fence at EOF.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-08",
+      "name": "Truncated Code Fence without Language Tag",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "Correctly extracted unclosed fence with empty language specifier.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-09",
+      "name": "AST Syntax Validation Edge Cases",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "validate_syntax correctly classified empty, malformed, indentation error, and valid inputs.",
+      "metrics": {}
+    },
+    {
+      "test_id": "CP-10",
+      "name": "Malformed Syntax in Code Block",
+      "category": "CodeParser",
+      "status": "PASS",
+      "details": "extract_python_code gracefully handles SyntaxError during scoring and returns raw block.",
+      "metrics": {}
+    },
+    {
+      "test_id": "SB-01",
+      "name": "Infinite Loop Subprocess Termination",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Process terminated cleanly after 2.01s with timed_out=True and exit_code=-1.",
+      "metrics": {
+        "elapsed": 2.0117199420928955,
+        "exit_code": -1,
+        "timed_out": true
+      }
+    },
+    {
+      "test_id": "SB-02",
+      "name": "Hanging Non-Daemon Thread Termination",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Non-daemon thread hang killed after 2.02s with timed_out=True.",
+      "metrics": {
+        "elapsed": 2.018922805786133
+      }
+    },
+    {
+      "test_id": "SB-03",
+      "name": "Syntax Error Exit Code & Diagnostics",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Handled syntax error with exit_code=2 and diagnostic traceback in summary.",
+      "metrics": {
+        "exit_code": 2,
+        "error_summary_preview": "==================================== ERRORS ====================================\n___________________"
+      }
+    },
+    {
+      "test_id": "SB-04",
+      "name": "MemoryError Exception Handling",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Captured MemoryError cleanly: exit_code=1, failed_tests=['test_simulated_oom'].",
+      "metrics": {
+        "failed_tests": [
+          "test_simulated_oom"
+        ]
+      }
+    },
+    {
+      "test_id": "SB-05",
+      "name": "Excessive Memory Allocation Handling",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Handled 100GB allocation without host crash: timed_out=True, exit_code=-1.",
+      "metrics": {}
+    },
+    {
+      "test_id": "SB-06",
+      "name": "Multiple Failing Assertions Isolation",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Correctly extracted all 3 failed/errored tests: ['test_bravo_fail', 'test_delta_fail', 'test_echo_error'] while ignoring passing tests.",
+      "metrics": {
+        "failed_tests": [
+          "test_bravo_fail",
+          "test_delta_fail",
+          "test_echo_error"
+        ]
+      }
+    },
+    {
+      "test_id": "SB-07",
+      "name": "No Tests Collected (Code 5)",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Correctly identified exit_code=5 with clear error summary message.",
+      "metrics": {}
+    },
+    {
+      "test_id": "SB-08",
+      "name": "Passing Test Suite Baseline",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Executed valid tests with exit_code=0, is_success=True, failed_tests=[].",
+      "metrics": {}
+    },
+    {
+      "test_id": "SB-09",
+      "name": "Environment Variable Isolation",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "Subprocess execution in sandbox cannot alter host os.environ.",
+      "metrics": {}
+    },
+    {
+      "test_id": "SB-10",
+      "name": "Filesystem Isolation & Cleanup",
+      "category": "PytestSandbox",
+      "status": "PASS",
+      "details": "All scratch files created in sandbox were confined to temp dir and cleaned up upon exit.",
+      "metrics": {}
+    },
+    {
+      "test_id": "SEC-01",
+      "name": "Static AST Audit for eval() / exec() in core/",
+      "category": "Security",
+      "status": "PASS",
+      "details": "Scanned 8 core modules: exactly 0 calls to eval() or exec().",
+      "metrics": {
+        "modules_scanned": [
+          "contract_parser.py",
+          "memory.py",
+          "graph.py",
+          "__init__.py",
+          "sandbox.py",
+          "llm_client.py",
+          "code_parser.py",
+          "state.py"
+        ]
+      }
+    },
+    {
+      "test_id": "SEC-02",
+      "name": "Dynamic Runtime Interception (eval / exec)",
+      "category": "Security",
+      "status": "PASS",
+      "details": "Zero calls to eval() or exec() observed during dynamic execution of CodeParser and PytestSandbox.",
+      "metrics": {
+        "core_eval_calls": 0,
+        "core_exec_calls": 0
+      }
+    }
+  ]
+}

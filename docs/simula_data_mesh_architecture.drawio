@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net" modified="2026-10-18T02:11:00.000Z" agent="Simula-AI" version="22.0.0" type="device">
+  <diagram id="simula-mesh-arch" name="Simula-AI Data Mesh Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#0B0F19" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Podman Container Boundary -->
+        <mxCell id="podman_box" value="PODMAN ROOTLESS CONTAINER (UID 10001: simula)" style="swimlane;whiteSpace=wrap;html=1;startSize=28;fillColor=#0D1527;strokeColor=#892FE8;strokeWidth=2;dashed=1;fontColor=#FFFFFF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1080" height="740" as="geometry" />
+        </mxCell>
+
+        <!-- 1. Data Contract Node -->
+        <mxCell id="contract_node" value="&lt;b&gt;DATA CONTRACT (YAML)&lt;/b&gt;&lt;br&gt;&lt;hr&gt;• Multi-table Schemas&lt;br&gt;• Primary &amp;amp; Foreign Keys&lt;br&gt;• Business Rules &amp;amp; Boundaries&lt;br&gt;• Topological DAG Dependencies" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#161E31;strokeColor=#38BDF8;strokeWidth=2;fontColor=#F8FAFC;align=left;spacingLeft=15;" vertex="1" parent="podman_box">
+          <mxGeometry x="40" y="80" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Dual Interface Nodes -->
+        <mxCell id="cli_node" value="&lt;b&gt;CLI (Typer + Rich)&lt;/b&gt;&lt;br&gt;simula run | inspect | diagram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#38BDF8;fontColor=#FFFFFF;" vertex="1" parent="podman_box">
+          <mxGeometry x="40" y="320" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui_node" value="&lt;b&gt;Web UI (Streamlit)&lt;/b&gt;&lt;br&gt;Interactive Mermaid ER &amp;amp; Data Preview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#EC4899;fontColor=#FFFFFF;" vertex="1" parent="podman_box">
+          <mxGeometry x="40" y="410" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- 3. CoALA Cognitive Engine Box -->
+        <mxCell id="coala_engine" value="&lt;b&gt;CoALA COGNITIVE ARCHITECTURE (LangGraph)&lt;/b&gt;" style="swimlane;whiteSpace=wrap;html=1;startSize=26;fillColor=#161E31;strokeColor=#00D2FF;strokeWidth=2;fontColor=#00D2FF;fontStyle=1;" vertex="1" parent="podman_box">
+          <mxGeometry x="320" y="60" width="440" height="640" as="geometry" />
+        </mxCell>
+
+        <!-- Hermes 3 AI Agent -->
+        <mxCell id="hermes_agent" value="&lt;b&gt;HERMES 3 AI (Nous Research)&lt;/b&gt;&lt;br&gt;&lt;i&gt;nousresearch/hermes-3-llama-3.1-405b&lt;/i&gt;&lt;br&gt;&lt;small&gt;Fallback: Qwen 2.5 Coder ➔ DeepSeek Chat&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#F5AF19;strokeWidth=2;fontColor=#FFFFFF;" vertex="1" parent="coala_engine">
+          <mxGeometry x="30" y="40" width="380" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Working Memory -->
+        <mxCell id="working_mem" value="&lt;b&gt;Working Memory&lt;/b&gt;&lt;br&gt;• Active Contract YAML&lt;br&gt;• Generated Code&lt;br&gt;• Pytest Stdout/Stderr" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#3B82F6;fontColor=#94A3B8;align=left;spacingLeft=10;" vertex="1" parent="coala_engine">
+          <mxGeometry x="30" y="160" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Episodic Memory -->
+        <mxCell id="episodic_mem" value="&lt;b&gt;Episodic Memory&lt;/b&gt;&lt;br&gt;• Iterative Failure Traces&lt;br&gt;• Syntax &amp;amp; Rule Errors&lt;br&gt;• Error Recovery History" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#EC4899;fontColor=#94A3B8;align=left;spacingLeft=10;" vertex="1" parent="coala_engine">
+          <mxGeometry x="230" y="160" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Subprocess Pytest Sandbox -->
+        <mxCell id="sandbox_node" value="&lt;b&gt;EXTERNAL ACTION: Pytest Sandbox&lt;/b&gt;&lt;br&gt;&lt;hr&gt;• Subprocess execution (No eval)&lt;br&gt;• Strict 30s OS Timeout&lt;br&gt;• Return Code 0 ➔ SUCCESS&lt;br&gt;• Return Code 1/2 ➔ TRACEBACK CAPTURE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=#10B981;strokeWidth=2;fontColor=#FFFFFF;align=left;spacingLeft=15;" vertex="1" parent="coala_engine">
+          <mxGeometry x="30" y="320" width="380" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Feedback Loop -->
+        <mxCell id="feedback_edge" value="Traceback Feedback Loop" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeColor=#F43F5E;strokeWidth=2;dashed=1;fontColor=#F43F5E;fontSize=11;" edge="1" parent="coala_engine" source="sandbox_node" target="hermes_agent">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="385" />
+              <mxPoint x="425" y="85" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 4. Deliverables Output Box -->
+        <mxCell id="output_box" value="&lt;b&gt;DATA MESH OUTPUT&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;Relational Datasets:&lt;/b&gt;&lt;br&gt;1. empresas (Corp/CNPJ)&lt;br&gt;2. propostas (Proposals)&lt;br&gt;3. garantias (Collaterals)&lt;br&gt;4. operacoes (Contracts)&lt;br&gt;&lt;br&gt;&lt;b&gt;Formats:&lt;/b&gt; CSV, JSON, Parquet&lt;br&gt;&lt;b&gt;Code:&lt;/b&gt; generator.py, test_mock.py&lt;br&gt;&lt;b&gt;Diagram:&lt;/b&gt; mesh_er_diagram.mmd" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#161E31;strokeColor=#10B981;strokeWidth=2;fontColor=#F8FAFC;align=left;spacingLeft=15;" vertex="1" parent="podman_box">
+          <mxGeometry x="810" y="80" width="230" height="320" as="geometry" />
+        </mxCell>
+
+        <!-- Connector Edges -->
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#38BDF8;strokeWidth=2;" edge="1" parent="podman_box" source="contract_node" target="coala_engine">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10B981;strokeWidth=3;" edge="1" parent="podman_box" source="coala_engine" target="output_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

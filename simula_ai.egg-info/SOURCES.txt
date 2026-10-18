@@ -1,0 +1,9 @@
+pyproject.toml
+core/__init__.py
+core/contract_parser.py
+simula_ai.egg-info/PKG-INFO
+simula_ai.egg-info/SOURCES.txt
+simula_ai.egg-info/dependency_links.txt
+simula_ai.egg-info/entry_points.txt
+simula_ai.egg-info/requires.txt
+simula_ai.egg-info/top_level.txt

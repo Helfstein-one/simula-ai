@@ -1,0 +1,124 @@
+import difflib
+from pathlib import Path
+
+orig_path = Path("core/code_parser.py")
+
+target_old = """    @classmethod
+    def extract_python_code(cls, response_text: str) -> str:
+        \"\"\"Strip reasoning tags and extract the primary executable Python code block.\"\"\"
+        cleaned_text = cls.strip_think_tags(response_text)
+
+        # Match closed code blocks
+        matches = CODE_BLOCK_PATTERN.findall(cleaned_text)
+
+        candidates: list[str] = []
+        if matches:
+            for lang, body in matches:
+                lang_clean = lang.strip().lower()
+                body_clean = body.strip()
+                if not body_clean:
+                    continue
+                # Exclude explicit non-python blocks if alternatives exist
+                if lang_clean in NON_PYTHON_LANGUAGES and len(matches) > 1:
+                    continue
+                candidates.append(body_clean)
+
+        # Fallback to unclosed code block if truncated
+        if not candidates:
+            unclosed_matches = UNCLOSED_CODE_BLOCK_PATTERN.findall(cleaned_text)
+            for lang, body in unclosed_matches:
+                lang_clean = lang.strip().lower()
+                body_clean = body.strip()
+                if body_clean and lang_clean not in NON_PYTHON_LANGUAGES:
+                    candidates.append(body_clean)"""
+
+new_code = """    @classmethod
+    def _find_all_code_blocks(cls, text: str) -> list[dict]:
+        \"\"\"Find all code blocks, both closed and unclosed, in appearance order.\"\"\"
+        blocks = []
+        for m in CODE_BLOCK_PATTERN.finditer(text):
+            blocks.append({
+                "start": m.start(),
+                "end": m.end(),
+                "lang": m.group(1).strip().lower(),
+                "body": m.group(2),
+                "closed": True,
+            })
+        last_end = blocks[-1]["end"] if blocks else 0
+        remaining = text[last_end:]
+        unclosed_m = UNCLOSED_CODE_BLOCK_PATTERN.search(remaining)
+        if unclosed_m:
+            blocks.append({
+                "start": last_end + unclosed_m.start(),
+                "end": len(text),
+                "lang": unclosed_m.group(1).strip().lower(),
+                "body": unclosed_m.group(2),
+                "closed": False,
+            })
+        return blocks
+
+    @classmethod
+    def extract_python_code(cls, response_text: str) -> str:
+        \"\"\"Strip reasoning tags outside code fences and extract the primary Python block.\"\"\"
+        if not response_text:
+            return ""
+
+        # Step 1: Identify all code blocks (closed & unclosed)
+        blocks = cls._find_all_code_blocks(response_text)
+
+        # Step 2: Mask code block bodies so think tags inside strings/comments are preserved
+        if blocks:
+            pieces: list[str] = []
+            last_pos = 0
+            for i, b in enumerate(blocks):
+                pieces.append(response_text[last_pos:b["start"]])
+                token = f"__SIMULA_CODE_BLOCK_{i}__"
+                if b["closed"]:
+                    pieces.append(f"```{b['lang']}\\n{token}\\n```")
+                else:
+                    pieces.append(f"```{b['lang']}\\n{token}")
+                last_pos = b["end"]
+            pieces.append(response_text[last_pos:])
+            masked_text = "".join(pieces)
+        else:
+            masked_text = response_text
+
+        # Step 3: Strip think tags outside isolated code blocks
+        cleaned_text = cls.strip_think_tags(masked_text)
+
+        # Step 4: Collect candidates that survived think tag stripping
+        candidates: list[str] = []
+        if blocks:
+            closed_candidates: list[str] = []
+            unclosed_candidates: list[str] = []
+            for i, b in enumerate(blocks):
+                token = f"__SIMULA_CODE_BLOCK_{i}__"
+                if token not in cleaned_text:
+                    continue
+                if b["lang"] in NON_PYTHON_LANGUAGES:
+                    continue
+                body_clean = b["body"].strip()
+                if not body_clean:
+                    continue
+                if b["closed"]:
+                    closed_candidates.append(body_clean)
+                else:
+                    unclosed_candidates.append(body_clean)
+
+            candidates = closed_candidates if closed_candidates else unclosed_candidates"""
+
+orig_text = orig_path.read_text(encoding="utf-8")
+assert target_old in orig_text, "target_old not found in core/code_parser.py"
+mod_text = orig_text.replace(target_old, new_code, 1)
+
+patch_lines = list(difflib.unified_diff(
+    orig_text.splitlines(keepends=True),
+    mod_text.splitlines(keepends=True),
+    fromfile="a/core/code_parser.py",
+    tofile="b/core/code_parser.py"
+))
+
+patch_content = "".join(patch_lines)
+patch_path = Path(".agents/teamwork/teamwork_preview_explorer_m2_it2_2/extract_python_code_fix.patch")
+patch_path.write_text(patch_content, encoding="utf-8")
+print(f"Generated patch cleanly: {len(patch_content)} bytes")
