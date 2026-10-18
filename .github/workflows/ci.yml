@@ -264,6 +264,7 @@ jobs:
         with:
           context: .
           file: ./Containerfile
+          load: true
           push: false
           tags: simula-ai:ci-test
 
