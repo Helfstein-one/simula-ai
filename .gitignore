@@ -12,3 +12,4 @@ dist/
 build/
 .DS_Store
 .env
+docs/assets/_diagram_render.html

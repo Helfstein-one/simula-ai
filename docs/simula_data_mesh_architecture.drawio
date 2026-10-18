@@ -30,8 +30,11 @@
         </mxCell>
 
         <!-- Hermes 3 AI Agent -->
-        <mxCell id="hermes_agent" value="&lt;b&gt;HERMES 3 AI (Nous Research)&lt;/b&gt;&lt;br&gt;&lt;i&gt;nousresearch/hermes-3-llama-3.1-405b&lt;/i&gt;&lt;br&gt;&lt;small&gt;Fallback: Qwen 2.5 Coder ➔ DeepSeek Chat&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#F5AF19;strokeWidth=2;fontColor=#FFFFFF;" vertex="1" parent="coala_engine">
+        <mxCell id="hermes_agent" value="&lt;b&gt;HERMES 3 AI (Nous Research)&lt;/b&gt;&lt;br&gt;&lt;i&gt;nousresearch/hermes-3-llama-3.1-405b / 70b&lt;/i&gt;&lt;br&gt;&lt;small&gt;Fallback: Qwen 2.5 Coder ➔ DeepSeek Chat&lt;/small&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#F5AF19;strokeWidth=2;fontColor=#FFFFFF;spacingLeft=85;align=left;" vertex="1" parent="coala_engine">
           <mxGeometry x="30" y="40" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="hermes_img" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;imageAspect=0;aspect=fixed;image=assets/hermes.png;rounded=1;" vertex="1" parent="coala_engine">
+          <mxGeometry x="45" y="52" width="65" height="65" as="geometry" />
         </mxCell>
 
         <!-- Working Memory -->

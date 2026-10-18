@@ -34,7 +34,7 @@ O **Simula-AI** soluciona essa dor através de um **ciclo cognitivo autônomo fe
 ## 🏛️ Arquitetura de Dados (Draw.io & Visão Geral)
 
 <p align="center">
-  <img src="docs/assets/simula_data_mesh_architecture.svg" alt="Simula-AI Data Mesh Architecture" width="100%" />
+  <img src="docs/assets/simula_data_mesh_architecture.png" alt="Simula-AI Data Mesh Architecture with Draw.io & Hermes AI" width="100%" style="border-radius: 12px; border: 1px solid #1e293b; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </p>
 
 > 💡 **Arquivo Editável:** O diagrama oficial com ícones e fluxo completo está disponível em [`docs/simula_data_mesh_architecture.drawio`](docs/simula_data_mesh_architecture.drawio) (compatível com [diagrams.net](https://app.diagrams.net) e a extensão Draw.io do VS Code).
