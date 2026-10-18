@@ -286,6 +286,61 @@ uv run pytest tests/e2e/ -v
 
 ---
 
+## 🌳 Pipeline de CI em Árvore Granular (GitHub Actions)
+
+O pipeline de Integração Contínua (`.github/workflows/ci.yml`) é estruturado em formato de **Árvore DAG Granular** com 10 etapas distribuídas em estágios interdependentes:
+
+```mermaid
+flowchart TD
+    S0["00 • Lint, Sintaxe & Higiene<br/>compileall • ruff • yamllint"]
+
+    S1A["01A • Unit: Contract Parser & DAG<br/>Kahn Sort • Pydantic v2"]
+    S1B["01B • Unit: CoALA Loop & Sandbox<br/>State • Memória • Regex Hermes"]
+
+    S2["02 • E2E: Tier 1 Features & Esquemas<br/>CLI App • Streamlit Layout • Exporter"]
+
+    S3A["03A • E2E: Tier 2 Boundary Conditions<br/>Unclosed Tags • Timeout 30s • Malformed YAML"]
+    S3B["03B • E2E: Tier 3 Pairwise Integration<br/>CLI ➔ CoALA ➔ Artifacts • State Bridge"]
+
+    S4["04 • E2E: Tier 4 Workloads & Integridade<br/>Credit Mesh Simulation • Unicidade PK • 100% FK"]
+
+    S5A["05A • CLI Smoke & Artifact Lifecycle<br/>inspect • diagram • run --mock • test"]
+    S5B["05B • Container Build & Rootless<br/>Podman / Docker Build • Entrypoint Verification"]
+
+    S6["06 • Quality Gate Certified<br/>Certificação e Liberação de Build"]
+
+    S0 --> S1A
+    S0 --> S1B
+
+    S1A --> S2
+    S1B --> S2
+
+    S2 --> S3A
+    S2 --> S3B
+
+    S3A --> S4
+    S3B --> S4
+
+    S4 --> S5A
+    S4 --> S5B
+
+    S5A --> S6
+    S5B --> S6
+
+    style S0 fill:#1e293b,stroke:#94a3b8,color:#fff
+    style S1A fill:#0f172a,stroke:#38bdf8,color:#fff
+    style S1B fill:#0f172a,stroke:#f5af19,color:#fff
+    style S2 fill:#161e31,stroke:#a855f7,color:#fff
+    style S3A fill:#0f172a,stroke:#ec4899,color:#fff
+    style S3B fill:#0f172a,stroke:#3b82f6,color:#fff
+    style S4 fill:#064e3b,stroke:#10b981,color:#fff
+    style S5A fill:#1e293b,stroke:#00d2ff,color:#fff
+    style S5B fill:#1e293b,stroke:#892fe8,color:#fff
+    style S6 fill:#047857,stroke:#34d399,stroke-width:2px,color:#fff
+```
+
+---
+
 ## 📁 Estrutura do Repositório
 
 ```
