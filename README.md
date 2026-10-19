@@ -13,7 +13,7 @@
   <a href="#-visão-geral"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg" alt="Python Version"></a>
   <a href="#-conteinerização-com-podman"><img src="https://img.shields.io/badge/Podman-Rootless%20Ready-purple.svg" alt="Podman"></a>
   <a href="#-hermes-3-ai--fallback"><img src="https://img.shields.io/badge/LLM-Hermes%203%20(405B%2F70B)-orange.svg" alt="Hermes 3"></a>
-  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-97%2F97%20Passed-brightgreen.svg" alt="Tests"></a>
+  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-108%2F108%20Passed-brightgreen.svg" alt="Tests"></a>
   <a href="#-licença"><img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg" alt="License"></a>
 </p>
 
@@ -341,6 +341,64 @@ flowchart TD
 
 ---
 
+## 🔷 Arquitetura Hexagonal (Ports & Adapters) & Princípios SOLID
+
+O **Simula-AI** adota rigorosamente a **Arquitetura Hexagonal** (Ports and Adapters) e os princípios **SOLID**, desacoplando o núcleo de negócio de detalhes externos de infraestrutura:
+
+```
+          [ CLI / Typer ]         [ Web UI / Streamlit ]
+                 │                          │
+                 ▼                          ▼
+      ┌──────────────────────────────────────────────┐
+      │          Application Use Cases               │
+      │  InspectContractUseCase • SimulateMesh       │
+      │  GenerateDiagramUseCase • ExportDeliverables │
+      └──────────────────────┬───────────────────────┘
+                             │ (Primary Ports)
+                             ▼
+      ┌──────────────────────────────────────────────┐
+      │               Domain Layer                   │
+      │  • DataContract & Relational Mesh Entities   │
+      │  • Two-Stage In-Memory AST Validator         │
+      │  • Kahn DAG Topological Scaffolding          │
+      │  • SimulaEvent & CoALA State Models          │
+      └──────────────────────▲───────────────────────┘
+                             │ (Secondary Ports)
+                             │
+      ┌──────────────────────┴───────────────────────┐
+      │            Application Ports                 │
+      │  ContractParserPort • CodeSandboxPort        │
+      │  LLMProviderPort    • DiagramGeneratorPort   │
+      │  DatasetExporterPort                         │
+      └──────────────────────▲───────────────────────┘
+                             │
+      ┌──────────────────────┴───────────────────────┐
+      │          Infrastructure & Adapters           │
+      │  • YamlContractAdapter (Pydantic v2 Ingestion)│
+      │  • PytestSandboxAdapter (Subprocess Sandbox) │
+      │  • OpenRouterAdapter (Hermes 3 AI / Mocks)   │
+      │  • MermaidDiagramAdapter (Hybrid ER Engine)  │
+      │  • PandasExporterAdapter (Multi-format Data) │
+      │  • SimulaContainer (Pure Python DI Container)│
+      └──────────────────────────────────────────────┘
+```
+
+### Princípios SOLID Aplicados:
+* **Single Responsibility Principle (SRP):** Cada caso de uso (`InspectContractUseCase`, `SimulateMeshUseCase`, `GenerateDiagramUseCase`, `ExportDeliverablesUseCase`) possui responsabilidade estrita e isolada.
+* **Open/Closed Principle (OCP):** Novos provedores de sandbox ou LLMs locais podem ser plugados implementando as portas sem alterar o domínio.
+* **Liskov Substitution Principle (LSP):** `OpenRouterAdapter` e `MockLLMClient` implementam `LLMProviderPort` e são 100% intercambiáveis.
+* **Interface Segregation Principle (ISP):** Portas granulares e coesas (`ContractParserPort`, `CodeSandboxPort`, etc.) sem acoplamento desnecessário.
+* **Dependency Inversion Principle (DIP):** Casos de uso dependem estritamente de abstrações (`Protocol`), montados pelo Composition Root `SimulaContainer` sem nenhum framework pesado de DI.
+
+### Assertividade e Resiliência (Zero-Fault Loop):
+1. **Validação AST In-Memory de 2 Estágios (`DomainASTValidator`):**
+   - **Estágio 1:** Análise sintática instantânea da árvore sintática abstrata (`ast.parse`).
+   - **Estágio 2:** Análise estrutural estrita: verificação de presença mandatória da função `generate_mock_data(rows: int)`, suíte Pytest `test_*` e bloqueio de funções proibidas (`eval`, `exec`, `os.system`).
+2. **Grounding Topológico de Domínio (`DomainTemplateGrounding`):**
+   - Extrai a ordenação estrita do DAG de Kahn e constrói o scaffolding referencial guiando o Hermes 3 a instanciar primeiro tabelas-pai e depois tabelas-filhas, eliminando 100% de violações de chave estrangeira.
+
+---
+
 ## 📁 Estrutura do Repositório
 
 ```
@@ -352,19 +410,38 @@ simula-ai/
 │   │   ├── hermes.webp
 │   │   └── simula_data_mesh_architecture.svg # Diagrama vetorial oficial
 │   └── simula_data_mesh_architecture.drawio   # Diagrama editável Draw.io
+├── domain/                                # Camada de Domínio Puro
+│   ├── __init__.py
+│   ├── entities.py                        # Entidades DataContract, TableContract, etc.
+│   ├── state.py                           # Modelos CoALA (SimulaState, EpisodicMemory)
+│   ├── events.py                          # SimulaEvent para streaming de ciclo
+│   ├── ast_validator.py                   # Validador AST em 2 estágios (sintaxe & estrutura)
+│   └── grounding.py                       # Scaffolding ordenado por DAG de Kahn
+├── application/                           # Casos de Uso e Portas da Aplicação
+│   ├── ports/
+│   │   ├── contract_port.py               # Protocolo ContractParserPort
+│   │   ├── sandbox_port.py                # Protocolo CodeSandboxPort & SandboxResult
+│   │   ├── llm_port.py                    # Protocolo LLMProviderPort
+│   │   ├── diagram_port.py                # Protocolo DiagramGeneratorPort
+│   │   └── exporter_port.py               # Protocolo DatasetExporterPort
+│   └── use_cases/
+│       ├── inspect_contract.py            # InspectContractUseCase
+│       ├── simulate_mesh.py               # SimulateMeshUseCase (CoALA Loop)
+│       ├── generate_diagram.py            # GenerateDiagramUseCase (Mermaid ER)
+│       └── export_deliverables.py         # ExportDeliverablesUseCase
+├── adapters/                              # Adaptadores Secundários (Outbound)
+│   └── outbound/
+│       ├── yaml_contract_adapter.py       # Ingestão de Contratos YAML
+│       ├── pytest_sandbox_adapter.py      # Execução Pytest em subprocesso isolado
+│       ├── openrouter_adapter.py          # Cliente OpenRouter Hermes 3 e Mock
+│       ├── mermaid_adapter.py             # Renderização de diagramas Mermaid
+│       └── pandas_exporter_adapter.py     # Exportação em CSV, JSON e Parquet
+├── infrastructure/                        # Infraestrutura e Composition Root
+│   ├── __init__.py
+│   └── container.py                       # SimulaContainer (Pure Python DI Container)
+├── core/                                  # Facades e Compatibilidade Regressiva
 ├── contracts/
 │   └── exemplo_credito_mesh.yaml          # Contrato de crédito corporativo (4 tabelas)
-├── core/
-│   ├── __init__.py
-│   ├── contract_parser.py                 # Validador Pydantic v2 & DAG de dependências
-│   ├── state.py                           # Estado CoALA (SimulaState)
-│   ├── memory.py                          # Memória procedimental, de trabalho e episódica
-│   ├── llm_client.py                      # Cliente OpenRouter Hermes 3 com fallback resiliente
-│   ├── code_parser.py                     # Extrator regex para <scratchpad>, <think> e AST
-│   ├── sandbox.py                         # Sandbox seguro de execução Pytest com timeout
-│   ├── graph.py                           # Orquestração do StateGraph no LangGraph
-│   ├── diagram.py                         # Gerador híbrido de diagramas Mermaid ER
-│   └── exporter.py                        # Exportador de generator.py, test_mock.py e datasets
 ├── cli/
 │   ├── __init__.py
 │   └── main.py                            # CLI interativa Typer / Rich
@@ -374,7 +451,7 @@ simula-ai/
 │   └── bridge.py                          # Ponte reativa de estados para UI
 ├── tests/
 │   ├── conftest.py
-│   ├── unit/                              # 57 testes unitários
+│   ├── unit/                              # 68 testes unitários (incluindo hexagonal)
 │   └── e2e/                               # 40 testes E2E (Tiers 1 a 4)
 ├── Containerfile                          # Especificação Podman Rootless
 ├── entrypoint.sh                          # Script de inicialização (UI/CLI)

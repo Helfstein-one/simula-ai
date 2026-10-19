@@ -14,12 +14,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from core.contract_parser import parse_contract
-from core.diagram import generate_mermaid_er, save_mermaid_er
-from core.exporter import export_deliverables
-from core.graph import run_simula_loop
-from core.llm_client import DEFAULT_PRIMARY_MODEL, OpenRouterClient
-from core.sandbox import PytestSandbox
+from core.llm_client import DEFAULT_PRIMARY_MODEL
+from infrastructure.container import SimulaContainer
 
 app = typer.Typer(
     name="simula",
@@ -59,21 +55,21 @@ def run_command(
         transient=True,
     ) as progress:
         task = progress.add_task("[cyan]Ingesting data contract...", total=None)
-        parsed_contract = parse_contract(contract)
+        contract_parser = SimulaContainer.get_contract_parser()
+        parsed_contract = contract_parser.parse(contract)
 
-        progress.update(task, description="[cyan]Initializing LLM client & sandbox...")
-        llm_client = OpenRouterClient(
+        progress.update(task, description="[cyan]Initializing LLM provider & sandbox...")
+        simulate_uc = SimulaContainer.get_simulate_mesh_use_case(
             model=model,
             mock_mode=mock or (os.environ.get("SIMULA_MOCK_LLM", "").lower() in ("true", "1", "yes")),
+            sandbox_timeout=30,
+            parser=contract_parser,
         )
-        sandbox = PytestSandbox(timeout_seconds=30)
 
         progress.update(task, description="[green]Executing CoALA LangGraph cognitive loop...")
         final_event = None
-        for ev in run_simula_loop(
-            contract_path=contract,
-            client=llm_client,
-            sandbox=sandbox,
+        for ev in simulate_uc.execute_stream(
+            contract_source=parsed_contract,
             max_iterations=iterations,
         ):
             final_event = ev
@@ -88,7 +84,8 @@ def run_command(
         generated_code = final_state.get("working_memory", {}).get("generated_code", "")
 
         # Export deliverables
-        artifacts = export_deliverables(
+        export_uc = SimulaContainer.get_export_deliverables_use_case()
+        artifacts = export_uc.execute(
             generated_code=generated_code,
             output_dir=out_path,
             contract=parsed_contract,
@@ -98,7 +95,8 @@ def run_command(
         )
         # Export Mermaid ER diagram
         diagram_file = out_path / "mesh_er_diagram.mmd"
-        save_mermaid_er(parsed_contract, diagram_file)
+        diagram_uc = SimulaContainer.get_generate_diagram_use_case()
+        diagram_uc.execute(contract_source=parsed_contract, output_path=diagram_file)
 
         console.print(f"[bold blue]✓ Artifacts exported successfully:[/bold blue]")
         console.print(f"  • Standalone Generator: {artifacts.get('generator')}")
@@ -118,19 +116,19 @@ def inspect_command(
     contract: str = typer.Argument(..., help="Path to Data Contract YAML file to inspect"),
 ) -> None:
     """Inspect and display data mesh tables, schema DAG topological order, and constraints."""
-    parsed_contract = parse_contract(contract)
+    inspect_uc = SimulaContainer.get_inspect_contract_use_case()
+    result = inspect_uc.execute(contract)
 
     console.print(
         Panel.fit(
-            f"[bold magenta]Data Contract: {parsed_contract.name}[/bold magenta] (v{parsed_contract.version})\n"
-            f"[dim]{parsed_contract.description or 'No description provided'}[/dim]",
+            f"[bold magenta]Data Contract: {result.name}[/bold magenta] (v{result.version})\n"
+            f"[dim]{result.description or 'No description provided'}[/dim]",
             border_style="magenta",
         )
     )
 
     # Topological order
-    dag_order = parsed_contract.topological_sort()
-    console.print(f"[bold yellow]Topological Ingestion DAG Order:[/bold yellow] {' ➔ '.join(dag_order)}")
+    console.print(f"[bold yellow]Topological Ingestion DAG Order:[/bold yellow] {' ➔ '.join(result.topological_order)}")
 
     # Tables summary table
     table = Table(title="Mesh Tables & Schemas", border_style="dim")
@@ -139,13 +137,12 @@ def inspect_command(
     table.add_column("Primary Key", style="green")
     table.add_column("Foreign Keys", style="yellow")
 
-    for tbl in parsed_contract.tables:
-        fks = [f"{fk.field}->{fk.references_table}.{fk.references_field}" for fk in getattr(tbl, "foreign_keys", [])]
+    for tbl in result.tables:
         table.add_row(
             tbl.name,
-            str(len(tbl.fields)),
+            str(tbl.column_count),
             tbl.primary_key or "N/A",
-            ", ".join(fks) or "None",
+            ", ".join(tbl.foreign_keys) or "None",
         )
 
     console.print(table)
@@ -157,14 +154,11 @@ def diagram_command(
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Target file for .mmd diagram"),
 ) -> None:
     """Generate and display the hybrid Mermaid ER diagram from data contract."""
-    parsed_contract = parse_contract(contract)
-    mmd = generate_mermaid_er(parsed_contract)
+    diagram_uc = SimulaContainer.get_generate_diagram_use_case()
+    mmd = diagram_uc.execute(contract_source=contract, output_path=output)
 
     if output:
-        out_file = Path(output)
-        out_file.parent.mkdir(parents=True, exist_ok=True)
-        out_file.write_text(mmd, encoding="utf-8")
-        console.print(f"[bold green]✓ Mermaid ER diagram saved to {out_file}[/bold green]")
+        console.print(f"[bold green]✓ Mermaid ER diagram saved to {output}[/bold green]")
     else:
         console.print(Panel(mmd, title="Mermaid ER Diagram", border_style="cyan"))
 
@@ -177,18 +171,21 @@ def export_command(
     format: str = typer.Option("all", "--format", "-f", help="Output formats: csv, json, parquet, or all"),
 ) -> None:
     """Export standalone generator, test suite, and datasets for the given contract."""
-    parsed_contract = parse_contract(contract)
+    contract_parser = SimulaContainer.get_contract_parser()
+    parsed_contract = contract_parser.parse(contract)
     out_path = Path(output_dir)
 
     formats = ["all"] if format == "all" else [f.strip() for f in format.split(",")]
-    artifacts = export_deliverables(
+    export_uc = SimulaContainer.get_export_deliverables_use_case()
+    artifacts = export_uc.execute(
         output_dir=out_path,
         contract=parsed_contract,
         generate_datasets=True,
         rows=rows,
         formats=formats,
     )
-    save_mermaid_er(parsed_contract, out_path / "mesh_er_diagram.mmd")
+    diagram_uc = SimulaContainer.get_generate_diagram_use_case()
+    diagram_uc.execute(contract_source=parsed_contract, output_path=out_path / "mesh_er_diagram.mmd")
     console.print(f"[bold green]✓ Deliverables exported to {out_path}[/bold green]")
 
 

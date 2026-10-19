@@ -9,12 +9,8 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from core.contract_parser import parse_contract
-from core.diagram import generate_mermaid_er
-from core.exporter import export_deliverables
-from core.graph import run_simula_loop
-from core.llm_client import DEFAULT_PRIMARY_MODEL, OpenRouterClient
-from core.sandbox import PytestSandbox
+from core.llm_client import DEFAULT_PRIMARY_MODEL
+from infrastructure.container import SimulaContainer
 
 st.set_page_config(
     page_title="Simula-AI | Relational Data Mocking",
@@ -106,19 +102,18 @@ with tab_contract:
         st.subheader("Validação de Esquema & DAG Relacional")
         if st.session_state.contract_yaml.strip():
             try:
-                contract = parse_contract(st.session_state.contract_yaml)
-                st.success(f"✓ Contrato válido: **{contract.name}** (v{contract.version})")
-                dag_order = contract.topological_sort()
-                st.info(f"**Ordem Topológica (DAG):** {' ➔ '.join(dag_order)}")
+                inspect_uc = SimulaContainer.get_inspect_contract_use_case()
+                result = inspect_uc.execute(st.session_state.contract_yaml)
+                st.success(f"✓ Contrato válido: **{result.name}** (v{result.version})")
+                st.info(f"**Ordem Topológica (DAG):** {' ➔ '.join(result.topological_order)}")
 
                 summary_data = []
-                for t in contract.tables:
-                    fks = [f"{fk.field} -> {fk.references_table}.{fk.references_field}" for fk in getattr(t, "foreign_keys", [])]
+                for t in result.tables:
                     summary_data.append({
                         "Tabela": t.name,
-                        "Colunas": len(t.fields),
+                        "Colunas": t.column_count,
                         "PK": t.primary_key or "N/A",
-                        "FKs": ", ".join(fks) or "Nenhuma",
+                        "FKs": ", ".join(t.foreign_keys) or "Nenhuma",
                     })
                 st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
             except Exception as e:
@@ -129,8 +124,8 @@ with tab_diagram:
     st.subheader("Diagrama Entidade-Relacionamento (Mermaid ER)")
     if st.session_state.contract_yaml.strip():
         try:
-            contract = parse_contract(st.session_state.contract_yaml)
-            mmd = generate_mermaid_er(contract)
+            diagram_uc = SimulaContainer.get_generate_diagram_use_case()
+            mmd = diagram_uc.execute(st.session_state.contract_yaml)
 
             # Render Mermaid using HTML/JS
             html_code = f"""
@@ -160,17 +155,13 @@ with tab_loop:
         else:
             with st.spinner("Agente executando loop cognitivo CoALA..."):
                 try:
-                    parsed_contract = parse_contract(st.session_state.contract_yaml)
-                    client = OpenRouterClient(
+                    simulate_uc = SimulaContainer.get_simulate_mesh_use_case(
                         model=model_choice,
                         mock_mode=mock_mode,
+                        sandbox_timeout=30,
                     )
-                    sandbox = PytestSandbox(timeout_seconds=30)
-
-                    final_state = run_simula_loop(
-                        contract_path=st.session_state.contract_yaml,
-                        client=client,
-                        sandbox=sandbox,
+                    final_state = simulate_uc.execute(
+                        contract_source=st.session_state.contract_yaml,
                         max_iterations=max_iterations,
                     )
                     st.session_state.final_state = final_state
@@ -178,7 +169,10 @@ with tab_loop:
                     if final_state.get("status") == "SUCCESS":
                         out_dir = Path("output")
                         out_dir.mkdir(parents=True, exist_ok=True)
-                        artifacts = export_deliverables(
+                        contract_parser = SimulaContainer.get_contract_parser()
+                        parsed_contract = contract_parser.parse(st.session_state.contract_yaml)
+                        export_uc = SimulaContainer.get_export_deliverables_use_case()
+                        artifacts = export_uc.execute(
                             generated_code=final_state.get("working_memory", {}).get("generated_code", ""),
                             output_dir=out_dir,
                             contract=parsed_contract,

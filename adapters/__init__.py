@@ -1,0 +1,1 @@
+"""adapters - Hexagonal architecture adapters."""
