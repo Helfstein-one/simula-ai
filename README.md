@@ -13,7 +13,7 @@
   <a href="#-visão-geral"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg" alt="Python Version"></a>
   <a href="#-conteinerização-com-podman"><img src="https://img.shields.io/badge/Podman-Rootless%20Ready-purple.svg" alt="Podman"></a>
   <a href="#-hermes-3-ai--fallback"><img src="https://img.shields.io/badge/LLM-Hermes%203%20(405B%2F70B)-orange.svg" alt="Hermes 3"></a>
-  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-108%2F108%20Passed-brightgreen.svg" alt="Tests"></a>
+  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-114%2F114%20Passed-brightgreen.svg" alt="Tests"></a>
   <a href="#-licença"><img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg" alt="License"></a>
 </p>
 
@@ -369,13 +369,15 @@ O **Simula-AI** adota rigorosamente a **Arquitetura Hexagonal** (Ports and Adapt
       │            Application Ports                 │
       │  ContractParserPort • CodeSandboxPort        │
       │  LLMProviderPort    • DiagramGeneratorPort   │
-      │  DatasetExporterPort                         │
+      │  DatasetExporterPort• StateRepositoryPort    │
       └──────────────────────▲───────────────────────┘
                              │
       ┌──────────────────────┴───────────────────────┐
       │          Infrastructure & Adapters           │
       │  • YamlContractAdapter (Pydantic v2 Ingestion)│
       │  • PytestSandboxAdapter (Subprocess Sandbox) │
+      │  • PodmanSandboxAdapter (Rootless OCI Sandbox)│
+      │  • SqliteStateAdapter (ACID Checkpoints & DB)│
       │  • OpenRouterAdapter (Hermes 3 AI / Mocks)   │
       │  • MermaidDiagramAdapter (Hybrid ER Engine)  │
       │  • PandasExporterAdapter (Multi-format Data) │
@@ -384,10 +386,10 @@ O **Simula-AI** adota rigorosamente a **Arquitetura Hexagonal** (Ports and Adapt
 ```
 
 ### Princípios SOLID Aplicados:
-* **Single Responsibility Principle (SRP):** Cada caso de uso (`InspectContractUseCase`, `SimulateMeshUseCase`, `GenerateDiagramUseCase`, `ExportDeliverablesUseCase`) possui responsabilidade estrita e isolada.
-* **Open/Closed Principle (OCP):** Novos provedores de sandbox ou LLMs locais podem ser plugados implementando as portas sem alterar o domínio.
-* **Liskov Substitution Principle (LSP):** `OpenRouterAdapter` e `MockLLMClient` implementam `LLMProviderPort` e são 100% intercambiáveis.
-* **Interface Segregation Principle (ISP):** Portas granulares e coesas (`ContractParserPort`, `CodeSandboxPort`, etc.) sem acoplamento desnecessário.
+* **Single Responsibility Principle (SRP):** Cada caso de uso (`InspectContractUseCase`, `SimulateMeshUseCase`, `GenerateDiagramUseCase`, `ExportDeliverablesUseCase`) e adapter possui responsabilidade estrita e isolada.
+* **Open/Closed Principle (OCP):** Novos provedores de sandbox (Podman, Docker, Subprocess) e persistência (SQLite, DuckDB, JSONL) podem ser plugados implementando as portas sem alterar o domínio.
+* **Liskov Substitution Principle (LSP):** `PodmanSandboxAdapter` e `PytestSandboxAdapter` são perfeitamente intercambiáveis através de `CodeSandboxPort`; `OpenRouterAdapter` e `MockLLMClient` através de `LLMProviderPort`.
+* **Interface Segregation Principle (ISP):** Portas granulares e coesas (`ContractParserPort`, `CodeSandboxPort`, `StateRepositoryPort`, etc.) sem métodos desnecessários.
 * **Dependency Inversion Principle (DIP):** Casos de uso dependem estritamente de abstrações (`Protocol`), montados pelo Composition Root `SimulaContainer` sem nenhum framework pesado de DI.
 
 ### Assertividade e Resiliência (Zero-Fault Loop):
@@ -396,6 +398,8 @@ O **Simula-AI** adota rigorosamente a **Arquitetura Hexagonal** (Ports and Adapt
    - **Estágio 2:** Análise estrutural estrita: verificação de presença mandatória da função `generate_mock_data(rows: int)`, suíte Pytest `test_*` e bloqueio de funções proibidas (`eval`, `exec`, `os.system`).
 2. **Grounding Topológico de Domínio (`DomainTemplateGrounding`):**
    - Extrai a ordenação estrita do DAG de Kahn e constrói o scaffolding referencial guiando o Hermes 3 a instanciar primeiro tabelas-pai e depois tabelas-filhas, eliminando 100% de violações de chave estrangeira.
+3. **Persistência de Trilha CoALA (`SqliteStateAdapter`):**
+   - Histórico de iterações, erros, tracebacks e checkpoints registrado automaticamente em SQLite (`output/simula_history.db`) com exportador para JSONL.
 
 ---
 
@@ -423,16 +427,23 @@ simula-ai/
 │   │   ├── sandbox_port.py                # Protocolo CodeSandboxPort & SandboxResult
 │   │   ├── llm_port.py                    # Protocolo LLMProviderPort
 │   │   ├── diagram_port.py                # Protocolo DiagramGeneratorPort
-│   │   └── exporter_port.py               # Protocolo DatasetExporterPort
+│   │   ├── exporter_port.py               # Protocolo DatasetExporterPort
+│   │   └── state_repository_port.py       # Protocolo StateRepositoryPort
 │   └── use_cases/
 │       ├── inspect_contract.py            # InspectContractUseCase
 │       ├── simulate_mesh.py               # SimulateMeshUseCase (CoALA Loop)
 │       ├── generate_diagram.py            # GenerateDiagramUseCase (Mermaid ER)
 │       └── export_deliverables.py         # ExportDeliverablesUseCase
-├── adapters/                              # Adaptadores Secundários (Outbound)
+├── adapters/                              # Adaptadores Inbound & Outbound
+│   ├── inbound/
+│   │   ├── cli/                           # CLIController (Typer / Rich bridge)
+│   │   ├── web/                           # WebViewController (Streamlit bridge)
+│   │   └── api/                           # SimulaAPIRouter (REST API Router)
 │   └── outbound/
 │       ├── yaml_contract_adapter.py       # Ingestão de Contratos YAML
 │       ├── pytest_sandbox_adapter.py      # Execução Pytest em subprocesso isolado
+│       ├── podman_sandbox_adapter.py      # Execução Pytest em contêiner Podman
+│       ├── sqlite_state_adapter.py        # Persistência de sessões e checkpoints
 │       ├── openrouter_adapter.py          # Cliente OpenRouter Hermes 3 e Mock
 │       ├── mermaid_adapter.py             # Renderização de diagramas Mermaid
 │       └── pandas_exporter_adapter.py     # Exportação em CSV, JSON e Parquet
@@ -442,17 +453,19 @@ simula-ai/
 ├── core/                                  # Facades e Compatibilidade Regressiva
 ├── contracts/
 │   └── exemplo_credito_mesh.yaml          # Contrato de crédito corporativo (4 tabelas)
-├── cli/
-│   ├── __init__.py
-│   └── main.py                            # CLI interativa Typer / Rich
-├── ui/
-│   ├── __init__.py
-│   ├── app.py                             # Interface Web Streamlit (5 abas)
-│   └── bridge.py                          # Ponte reativa de estados para UI
+├── cli/                                   # Ponto de entrada CLI
+├── ui/                                    # Ponto de entrada Web Streamlit
 ├── tests/
 │   ├── conftest.py
-│   ├── unit/                              # 68 testes unitários (incluindo hexagonal)
+│   ├── unit/                              # 74 testes unitários (incluindo hexagonal)
 │   └── e2e/                               # 40 testes E2E (Tiers 1 a 4)
+├── Containerfile                          # Especificação Podman Rootless
+├── entrypoint.sh                          # Script de inicialização (UI/CLI)
+├── pyproject.toml                         # Metadados do pacote Python
+├── requirements.txt                       # Dependências do projeto
+├── .env.example                           # Configurações de ambiente
+└── README.md                              # Documentação oficial
+```
 ├── Containerfile                          # Especificação Podman Rootless
 ├── entrypoint.sh                          # Script de inicialização (UI/CLI)
 ├── pyproject.toml                         # Metadados do pacote Python

@@ -33,6 +33,7 @@ def run_command(
     mock: bool = typer.Option(False, "--mock", "-m", help="Run in deterministic offline mock mode"),
     rows: int = typer.Option(50, "--rows", "-r", help="Number of rows to generate per table"),
     model: Optional[str] = typer.Option(None, "--model", help="OpenRouter model (defaults to Hermes 3)"),
+    sandbox: str = typer.Option("auto", "--sandbox", "-s", help="Sandbox engine: auto, podman, or subprocess"),
 ) -> None:
     """Execute the CoALA cognitive loop to synthesize generators, test suites, and mock datasets."""
     out_path = Path(output_dir)
@@ -44,6 +45,7 @@ def run_command(
             f"[dim]Contract:[/dim] {contract}\n"
             f"[dim]Output Directory:[/dim] {out_path}\n"
             f"[dim]Model:[/dim] {model or os.environ.get('OPENROUTER_MODEL', DEFAULT_PRIMARY_MODEL)}\n"
+            f"[dim]Sandbox:[/dim] {sandbox}\n"
             f"[dim]Mode:[/dim] {'Mock (Offline)' if mock else 'OpenRouter Active'}",
             border_style="cyan",
         )
@@ -63,6 +65,7 @@ def run_command(
             model=model,
             mock_mode=mock or (os.environ.get("SIMULA_MOCK_LLM", "").lower() in ("true", "1", "yes")),
             sandbox_timeout=30,
+            sandbox_type=sandbox,
             parser=contract_parser,
         )
 

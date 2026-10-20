@@ -7,18 +7,22 @@ application use cases adhering strictly to SOLID principles without heavy third-
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any, Optional
 
 from adapters.outbound.mermaid_adapter import MermaidDiagramAdapter
 from adapters.outbound.openrouter_adapter import OpenRouterAdapter
 from adapters.outbound.pandas_exporter_adapter import PandasExporterAdapter
+from adapters.outbound.podman_sandbox_adapter import PodmanSandboxAdapter
 from adapters.outbound.pytest_sandbox_adapter import PytestSandboxAdapter
+from adapters.outbound.sqlite_state_adapter import SqliteStateAdapter
 from adapters.outbound.yaml_contract_adapter import YamlContractAdapter
 from application.ports.contract_port import ContractParserPort
 from application.ports.diagram_port import DiagramGeneratorPort
 from application.ports.exporter_port import DatasetExporterPort
 from application.ports.llm_port import LLMProviderPort
 from application.ports.sandbox_port import CodeSandboxPort
+from application.ports.state_repository_port import StateRepositoryPort
 from application.use_cases.export_deliverables import ExportDeliverablesUseCase
 from application.use_cases.generate_diagram import GenerateDiagramUseCase
 from application.use_cases.inspect_contract import InspectContractUseCase
@@ -35,9 +39,19 @@ class SimulaContainer:
         return YamlContractAdapter()
 
     @staticmethod
-    def get_sandbox(timeout_seconds: int = 30) -> CodeSandboxPort:
-        """Returns isolated Pytest execution sandbox adapter."""
+    def get_sandbox(
+        sandbox_type: str = "auto",
+        timeout_seconds: int = 30,
+    ) -> CodeSandboxPort:
+        """Returns isolated execution sandbox adapter (Podman with auto-fallback or pure Subprocess)."""
+        if sandbox_type.lower() in ("podman", "auto"):
+            return PodmanSandboxAdapter(timeout_seconds=timeout_seconds)
         return PytestSandboxAdapter(timeout_seconds=timeout_seconds)
+
+    @staticmethod
+    def get_state_repository(db_path: Optional[str | Path] = None) -> StateRepositoryPort:
+        """Returns SQLite and JSONL state & memory persistence repository adapter."""
+        return SqliteStateAdapter(db_path=db_path)
 
     @staticmethod
     def get_llm_provider(
@@ -99,11 +113,13 @@ class SimulaContainer:
         api_key: Optional[str] = None,
         mock_mode: bool = False,
         sandbox_timeout: int = 30,
+        sandbox_type: str = "auto",
         client: Any = None,
         sandbox: Any = None,
         parser: Optional[ContractParserPort] = None,
+        state_repository: Optional[StateRepositoryPort] = None,
     ) -> SimulateMeshUseCase:
-        """Assembles SimulateMeshUseCase with injected LLM, Sandbox, and Contract Parser."""
+        """Assembles SimulateMeshUseCase with injected LLM, Sandbox, Parser, and State Repository."""
         llm = client if isinstance(client, LLMProviderPort) else cls.get_llm_provider(
             model=model,
             api_key=api_key,
@@ -111,10 +127,12 @@ class SimulaContainer:
             client=client,
         )
         sb = sandbox if isinstance(sandbox, CodeSandboxPort) else (
-            sandbox if hasattr(sandbox, "execute") and hasattr(sandbox, "is_success") else cls.get_sandbox(timeout_seconds=sandbox_timeout)
+            sandbox if hasattr(sandbox, "execute") and hasattr(sandbox, "is_success") else cls.get_sandbox(sandbox_type=sandbox_type, timeout_seconds=sandbox_timeout)
         )
+        repo = state_repository if state_repository is not None else cls.get_state_repository()
         return SimulateMeshUseCase(
             llm_provider=llm,
             sandbox=sb,
             contract_parser=parser or cls.get_contract_parser(),
+            state_repository=repo,
         )

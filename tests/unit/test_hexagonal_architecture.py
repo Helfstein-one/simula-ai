@@ -8,16 +8,22 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from adapters.inbound.api.router import SimulaAPIRouter
+from adapters.inbound.cli.controller import CLIController
+from adapters.inbound.web.view_controller import WebViewController
 from adapters.outbound.mermaid_adapter import MermaidDiagramAdapter
 from adapters.outbound.openrouter_adapter import OpenRouterAdapter
 from adapters.outbound.pandas_exporter_adapter import PandasExporterAdapter
+from adapters.outbound.podman_sandbox_adapter import PodmanSandboxAdapter
 from adapters.outbound.pytest_sandbox_adapter import PytestSandboxAdapter
+from adapters.outbound.sqlite_state_adapter import SqliteStateAdapter
 from adapters.outbound.yaml_contract_adapter import YamlContractAdapter
 from application.ports.contract_port import ContractParserPort
 from application.ports.diagram_port import DiagramGeneratorPort
 from application.ports.exporter_port import DatasetExporterPort
 from application.ports.llm_port import LLMProviderPort
 from application.ports.sandbox_port import CodeSandboxPort, SandboxResult
+from application.ports.state_repository_port import StateRepositoryPort
 from application.use_cases.export_deliverables import ExportDeliverablesUseCase
 from application.use_cases.generate_diagram import GenerateDiagramUseCase
 from application.use_cases.inspect_contract import InspectContractUseCase
@@ -196,3 +202,95 @@ class TestSimulaContainerCompositionRoot:
 
         simulate_uc = SimulaContainer.get_simulate_mesh_use_case(mock_mode=True)
         assert isinstance(simulate_uc, SimulateMeshUseCase)
+
+        state_repo = SimulaContainer.get_state_repository()
+        assert isinstance(state_repo, StateRepositoryPort)
+
+
+class TestSqliteStatePersistence:
+    """Verifies SQLite and JSONL persistence of CoALA session checkpoints."""
+
+    def test_save_and_retrieve_checkpoints(self, tmp_path: Path):
+        db_file = tmp_path / "test_simula.db"
+        adapter = SqliteStateAdapter(db_path=db_file)
+        assert isinstance(adapter, StateRepositoryPort)
+
+        session_id = "test_sess_001"
+        test_state = {
+            "iterations": 1,
+            "max_iterations": 3,
+            "status": "INIT",
+            "working_memory": {"contract_yaml": "mesh_name: test"},
+            "episodic_memory": [],
+        }
+
+        adapter.save_checkpoint(session_id, 0, test_state, status="INIT", message="Starting")
+        adapter.save_checkpoint(session_id, 1, test_state, status="SUCCESS", message="Finished")
+
+        history = adapter.get_session_history(session_id)
+        assert len(history) == 2
+        assert history[0]["status"] == "INIT"
+        assert history[1]["status"] == "SUCCESS"
+
+        sessions = adapter.list_sessions()
+        assert len(sessions) >= 1
+        assert sessions[0]["session_id"] == session_id
+
+        # Export to JSONL
+        jsonl_path = tmp_path / "trace.jsonl"
+        exported = adapter.export_session_jsonl(session_id, str(jsonl_path))
+        assert Path(exported).exists()
+        assert Path(exported).stat().st_size > 0
+
+
+class TestPodmanSandboxFallback:
+    """Verifies Podman sandbox protocol compliance and automatic fallback."""
+
+    def test_podman_sandbox_satisfies_protocol(self):
+        sandbox = PodmanSandboxAdapter(timeout_seconds=5)
+        assert isinstance(sandbox, CodeSandboxPort)
+
+    def test_podman_fallback_execution_on_valid_code(self):
+        # Even without Podman running, fallback executes successfully
+        sandbox = PodmanSandboxAdapter(timeout_seconds=15)
+        code = """
+def test_something():
+    assert 2 + 2 == 4
+"""
+        result = sandbox.execute(code)
+        assert isinstance(result, SandboxResult)
+        assert result.is_success is True
+
+
+class TestInboundDrivingAdapters:
+    """Verifies CLIController, WebViewController, and SimulaAPIRouter driving adapters."""
+
+    def test_cli_controller_inspect_and_diagram(self):
+        controller = CLIController()
+        summary = controller.inspect_contract(SAMPLE_VALID_YAML)
+        assert summary.name == "test_mesh"
+
+        diagram = controller.generate_diagram(SAMPLE_VALID_YAML)
+        assert "erDiagram" in diagram
+
+    def test_web_view_controller_run(self, tmp_path: Path):
+        web = WebViewController()
+        res = web.run_simulation(
+            yaml_content=SAMPLE_VALID_YAML,
+            mock_mode=True,
+            output_dir=tmp_path,
+        )
+        assert res["final_state"]["status"] == "SUCCESS"
+        assert res["artifacts"] is not None
+
+    def test_api_router_endpoints(self):
+        api = SimulaAPIRouter()
+        inspect_data = api.inspect_contract(SAMPLE_VALID_YAML)
+        assert inspect_data["name"] == "test_mesh"
+        assert len(inspect_data["tables"]) == 2
+
+        diagram_data = api.generate_diagram(SAMPLE_VALID_YAML)
+        assert "erDiagram" in diagram_data["mermaid"]
+
+        sim_data = api.run_simulation(SAMPLE_VALID_YAML, mock_mode=True)
+        assert sim_data["status"] == "SUCCESS"

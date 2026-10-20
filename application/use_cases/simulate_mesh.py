@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any, Dict, Optional
 from application.ports.contract_port import ContractParserPort
 from application.ports.llm_port import LLMProviderPort
 from application.ports.sandbox_port import CodeSandboxPort
+from application.ports.state_repository_port import StateRepositoryPort
 from domain.ast_validator import DomainASTValidator
 from domain.entities import DataContract
 from domain.events import SimulaEvent
@@ -25,18 +27,22 @@ class SimulateMeshUseCase:
         llm_provider: LLMProviderPort,
         sandbox: CodeSandboxPort,
         contract_parser: ContractParserPort,
+        state_repository: Optional[StateRepositoryPort] = None,
     ) -> None:
         self.llm_provider = llm_provider
         self.sandbox = sandbox
         self.contract_parser = contract_parser
+        self.state_repository = state_repository
 
     def execute_stream(
         self,
         contract_source: str | Path | Dict[str, Any] | DataContract,
         max_iterations: int = 5,
+        session_id: Optional[str] = None,
         on_step_callback: Optional[Callable[[SimulaEvent], None]] = None,
     ) -> Iterator[SimulaEvent]:
         """Runs the CoALA cognitive loop, yielding SimulaEvent lifecycle events."""
+        current_session_id = session_id or uuid.uuid4().hex[:12]
         # 1. Ingest Contract
         if isinstance(contract_source, DataContract):
             contract = contract_source
@@ -96,6 +102,8 @@ class SimulateMeshUseCase:
         )
         if on_step_callback:
             on_step_callback(ev_init_done)
+        if self.state_repository:
+            self.state_repository.save_checkpoint(current_session_id, 0, state, status="INIT", message=ev_init_done.message)
         yield ev_init_done
 
         # 3. Cognitive Loop
@@ -190,6 +198,8 @@ class SimulateMeshUseCase:
                 )
                 if on_step_callback:
                     on_step_callback(ev_success)
+                if self.state_repository:
+                    self.state_repository.save_checkpoint(current_session_id, next_iter, state, status="SUCCESS", message=ev_success.message)
                 yield ev_success
                 break
             else:
@@ -216,6 +226,8 @@ class SimulateMeshUseCase:
                     )
                     if on_step_callback:
                         on_step_callback(ev_fail)
+                    if self.state_repository:
+                        self.state_repository.save_checkpoint(current_session_id, next_iter, state, status="FAILED_MAX_RETRIES", message=ev_fail.message)
                     yield ev_fail
                     break
                 else:
@@ -228,6 +240,8 @@ class SimulateMeshUseCase:
                     )
                     if on_step_callback:
                         on_step_callback(ev_retry)
+                    if self.state_repository:
+                        self.state_repository.save_checkpoint(current_session_id, next_iter, state, status="RETRY", message=ev_retry.message)
                     yield ev_retry
 
     def execute(
