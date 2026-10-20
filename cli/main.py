@@ -34,6 +34,7 @@ def run_command(
     rows: int = typer.Option(50, "--rows", "-r", help="Number of rows to generate per table"),
     model: Optional[str] = typer.Option(None, "--model", help="OpenRouter model (defaults to Hermes 3)"),
     sandbox: str = typer.Option("auto", "--sandbox", "-s", help="Sandbox engine: auto, podman, or subprocess"),
+    hybrid: bool = typer.Option(False, "--hybrid", "-H", help="Enable Hybrid Deterministic AST + Surgical AI Rules Engine"),
 ) -> None:
     """Execute the CoALA cognitive loop to synthesize generators, test suites, and mock datasets."""
     out_path = Path(output_dir)
@@ -46,6 +47,7 @@ def run_command(
             f"[dim]Output Directory:[/dim] {out_path}\n"
             f"[dim]Model:[/dim] {model or os.environ.get('OPENROUTER_MODEL', DEFAULT_PRIMARY_MODEL)}\n"
             f"[dim]Sandbox:[/dim] {sandbox}\n"
+            f"[dim]Engine:[/dim] {'Hybrid (AST Compiler + AI Rules)' if hybrid else 'LLM Autonomous'}\n"
             f"[dim]Mode:[/dim] {'Mock (Offline)' if mock else 'OpenRouter Active'}",
             border_style="cyan",
         )
@@ -74,6 +76,7 @@ def run_command(
         for ev in simulate_uc.execute_stream(
             contract_source=parsed_contract,
             max_iterations=iterations,
+            hybrid_mode=hybrid,
         ):
             final_event = ev
             if getattr(ev, "message", None):

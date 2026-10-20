@@ -13,7 +13,7 @@
   <a href="#-visão-geral"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg" alt="Python Version"></a>
   <a href="#-conteinerização-com-podman"><img src="https://img.shields.io/badge/Podman-Rootless%20Ready-purple.svg" alt="Podman"></a>
   <a href="#-hermes-3-ai--fallback"><img src="https://img.shields.io/badge/LLM-Hermes%203%20(405B%2F70B)-orange.svg" alt="Hermes 3"></a>
-  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-114%2F114%20Passed-brightgreen.svg" alt="Tests"></a>
+  <a href="#-testes-e-garantia-de-qualidade"><img src="https://img.shields.io/badge/Tests-119%2F119%20Passed-brightgreen.svg" alt="Tests"></a>
   <a href="#-licença"><img src="https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg" alt="License"></a>
 </p>
 
@@ -192,7 +192,10 @@ python -m cli.main inspect contracts/exemplo_credito_mesh.yaml
 # Gerar diagrama Mermaid ER e salvar em arquivo:
 python -m cli.main diagram contracts/exemplo_credito_mesh.yaml -o output/mesh_er_diagram.mmd
 
-# Executar o loop cognitivo com Hermes 3:
+# Executar com Motor Híbrido de Alta Assertividade (Compilador AST + IA de Regras):
+python -m cli.main run contracts/exemplo_credito_mesh.yaml --hybrid --rows 50 --output-dir output
+
+# Executar o loop autônomo com Hermes 3:
 python -m cli.main run contracts/exemplo_credito_mesh.yaml --rows 50 --output-dir output
 
 # Executar em modo offline (Mock rápido sem consumo de tokens):

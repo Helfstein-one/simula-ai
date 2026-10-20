@@ -8,12 +8,14 @@ from application.use_cases.inspect_contract import (
     TableInspectionSummary,
 )
 from application.use_cases.simulate_mesh import SimulateMeshUseCase
+from application.use_cases.synthesize_rules import SynthesizeBusinessRulesUseCase
 
 __all__ = [
     "InspectContractUseCase",
     "GenerateDiagramUseCase",
     "ExportDeliverablesUseCase",
     "SimulateMeshUseCase",
+    "SynthesizeBusinessRulesUseCase",
     "ContractInspectionResult",
     "TableInspectionSummary",
 ]

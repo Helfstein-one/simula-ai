@@ -27,6 +27,7 @@ from application.use_cases.export_deliverables import ExportDeliverablesUseCase
 from application.use_cases.generate_diagram import GenerateDiagramUseCase
 from application.use_cases.inspect_contract import InspectContractUseCase
 from application.use_cases.simulate_mesh import SimulateMeshUseCase
+from application.use_cases.synthesize_rules import SynthesizeBusinessRulesUseCase
 from core.llm_client import DEFAULT_PRIMARY_MODEL
 
 
@@ -105,6 +106,14 @@ class SimulaContainer:
     ) -> ExportDeliverablesUseCase:
         """Assembles ExportDeliverablesUseCase with injected dataset exporter."""
         return ExportDeliverablesUseCase(exporter=exporter or cls.get_dataset_exporter())
+
+    @classmethod
+    def get_synthesize_business_rules_use_case(
+        cls,
+        llm_provider: Optional[LLMProviderPort] = None,
+    ) -> SynthesizeBusinessRulesUseCase:
+        """Assembles SynthesizeBusinessRulesUseCase with injected LLM provider."""
+        return SynthesizeBusinessRulesUseCase(llm_provider=llm_provider or cls.get_llm_provider())
 
     @classmethod
     def get_simulate_mesh_use_case(

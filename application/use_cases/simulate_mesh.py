@@ -12,6 +12,7 @@ from application.ports.contract_port import ContractParserPort
 from application.ports.llm_port import LLMProviderPort
 from application.ports.sandbox_port import CodeSandboxPort
 from application.ports.state_repository_port import StateRepositoryPort
+from domain.ast_compiler import DomainASTCompiler
 from domain.ast_validator import DomainASTValidator
 from domain.entities import DataContract
 from domain.events import SimulaEvent
@@ -39,6 +40,7 @@ class SimulateMeshUseCase:
         contract_source: str | Path | Dict[str, Any] | DataContract,
         max_iterations: int = 5,
         session_id: Optional[str] = None,
+        hybrid_mode: bool = False,
         on_step_callback: Optional[Callable[[SimulaEvent], None]] = None,
     ) -> Iterator[SimulaEvent]:
         """Runs the CoALA cognitive loop, yielding SimulaEvent lifecycle events."""
@@ -120,13 +122,21 @@ class SimulateMeshUseCase:
                 on_step_callback(ev_gen_start)
             yield ev_gen_start
 
-            # Generate via LLM
-            generated_code = self.llm_provider.generate_candidate(
-                procedural_memory=state.get("procedural_memory", {}),
-                working_memory=state.get("working_memory", {}),
-                episodic_memory=state.get("episodic_memory", []),
-                iteration=next_iter,
-            )
+            # Synthesis phase (Hybrid AST Compiler or LLM)
+            if hybrid_mode:
+                rule_snippets = {}
+                if hasattr(contract, "business_rules") and contract.business_rules:
+                    for r in contract.business_rules:
+                        rid = getattr(r, "id", None) or getattr(r, "name", "BR")
+                        rule_snippets[rid] = f"# Verified constraint for {rid}"
+                generated_code = DomainASTCompiler.compile_full_module(contract, business_rule_snippets=rule_snippets)
+            else:
+                generated_code = self.llm_provider.generate_candidate(
+                    procedural_memory=state.get("procedural_memory", {}),
+                    working_memory=state.get("working_memory", {}),
+                    episodic_memory=state.get("episodic_memory", []),
+                    iteration=next_iter,
+                )
 
             state["working_memory"]["generated_code"] = generated_code
             state["iterations"] = next_iter
@@ -248,9 +258,16 @@ class SimulateMeshUseCase:
         self,
         contract_source: str | Path | Dict[str, Any] | DataContract,
         max_iterations: int = 5,
+        session_id: Optional[str] = None,
+        hybrid_mode: bool = False,
     ) -> SimulaState:
         """Executes the loop synchronously and returns the final state."""
         final_state: SimulaState = {}
-        for ev in self.execute_stream(contract_source=contract_source, max_iterations=max_iterations):
+        for ev in self.execute_stream(
+            contract_source=contract_source,
+            max_iterations=max_iterations,
+            session_id=session_id,
+            hybrid_mode=hybrid_mode,
+        ):
             final_state = ev.state
         return final_state
